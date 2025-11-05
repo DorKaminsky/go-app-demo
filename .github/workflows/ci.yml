@@ -112,6 +112,7 @@ jobs:
     name: Push Docker Image
     runs-on: [ self-hosted, solinas ]
     needs: docker-build
+
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
@@ -151,6 +152,7 @@ jobs:
     name: Deploy to Cloud Foundry
     runs-on: [ self-hosted, solinas ]
     needs: docker-push
+
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
