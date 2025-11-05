@@ -16,6 +16,7 @@ concurrency:
 env:
   GO_VERSION: '1.22'
   DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY || 'myregistry.example.com' }}
+  IMAGE_PATH: ${{ vars.IMAGE_PATH || '' }}
   IMAGE_NAME: go-app-demo
 
 jobs:
@@ -141,9 +142,9 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PATH }}${{ env.IMAGE_NAME }}:latest
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PATH }}${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PATH }}${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
