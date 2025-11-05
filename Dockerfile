@@ -1,35 +1,50 @@
-# ISSUE 1: Using older Go version instead of 1.22
-FROM golang:1.21-alpine AS builder
+# Build stage
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# ISSUE 2: Bad layer caching - copying all files before downloading dependencies
-# This means any code change invalidates the dependency cache
-COPY . .
+# Copy go.mod first for better layer caching
+COPY go.mod ./
 
-# ISSUE 3: Should copy go.mod and go.sum first, then run go mod download
+# Download dependencies (cached if go.mod hasn't changed)
 RUN go mod download
 
-# ISSUE 4: Building without optimization flags
-RUN go build -o go-app-demo .
+# Copy source code
+COPY main.go ./
+COPY VERSION ./
 
-# ISSUE 5: Using full golang image for runtime instead of minimal alpine
-FROM golang:1.21-alpine
+# Build with optimization flags to reduce binary size
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o go-app-demo .
+
+# Runtime stage - use minimal alpine image
+FROM alpine:latest
 
 WORKDIR /app
 
-# ISSUE 6: Running as root user - security issue
-# Should create non-root user
+# Install ca-certificates for HTTPS
+RUN apk --no-cache add ca-certificates
 
-# ISSUE 7: Copying unnecessary files
+# Create non-root user for security
+RUN addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser
+
+# Copy only the binary and VERSION file
 COPY --from=builder /app/go-app-demo .
 COPY --from=builder /app/VERSION .
 
-# ISSUE 8: No health check defined
-# HEALTHCHECK should be added
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
 
-# ISSUE 9: Hardcoded port instead of using ENV
-EXPOSE 8080
+# Switch to non-root user
+USER appuser
 
-# ISSUE 10: No signal handling for graceful shutdown
+# Use environment variable for port
+ENV PORT=8080
+EXPOSE ${PORT}
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
+
+# Application handles graceful shutdown via signals
 CMD ["./go-app-demo"]

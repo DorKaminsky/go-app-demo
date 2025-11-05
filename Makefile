@@ -1,46 +1,91 @@
-.PHONY: build test docker-build docker-push deploy clean
+.PHONY: build test lint docker-build docker-push deploy clean coverage check-tools
 
-# ISSUE 1: Hardcoded values that should be variables
-DOCKER_REGISTRY=myregistry.example.com
-IMAGE_NAME=go-app-demo
-VERSION=$(shell cat VERSION)
+# Configuration - can be overridden via environment variables
+DOCKER_REGISTRY ?= myregistry.example.com
+IMAGE_NAME ?= go-app-demo
+RAW_VERSION := $(shell cat VERSION)
+VERSION := $(shell echo $(RAW_VERSION) | sed 's/-SNAPSHOT//')
+GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
-# ISSUE 2: No validation of required tools (docker, cf cli, go)
+# Check if required tools are installed
+check-tools:
+	@command -v go >/dev/null 2>&1 || { echo "Error: go is not installed"; exit 1; }
+	@command -v docker >/dev/null 2>&1 || { echo "Error: docker is not installed"; exit 1; }
+	@echo "✓ Required tools are installed"
 
-build:
+build: check-tools
 	@echo "Building Go application..."
-	go build -o go-app-demo .
+	@go build -ldflags="-w -s" -o go-app-demo .
+	@echo "✓ Build complete"
 
-test:
+test: check-tools
 	@echo "Running tests..."
-	go test -v ./...
-	# ISSUE 3: No coverage report or coverage threshold check
+	@go test -v ./...
+	@echo "✓ Tests passed"
 
-# ISSUE 4: Missing lint target that CI pipeline expects
-# lint:
-# 	golangci-lint run
+coverage: check-tools
+	@echo "Running tests with coverage..."
+	@go test -v -coverprofile=coverage.out ./...
+	@go tool cover -func=coverage.out
+	@echo "✓ Coverage report generated"
 
-docker-build:
+lint: check-tools
+	@echo "Running linter..."
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run; \
+	else \
+		echo "Warning: golangci-lint not installed, running go vet instead"; \
+		go vet ./...; \
+	fi
+	@echo "✓ Lint complete"
+
+docker-build: check-tools
 	@echo "Building Docker image..."
-	# ISSUE 5: Using 'latest' tag only, no version tagging
-	docker build -t $(IMAGE_NAME):latest .
+	@docker build \
+		-t $(IMAGE_NAME):latest \
+		-t $(IMAGE_NAME):$(VERSION) \
+		-t $(IMAGE_NAME):$(VERSION)-$(GIT_SHA) \
+		.
+	@echo "✓ Docker image built with tags: latest, $(VERSION), $(VERSION)-$(GIT_SHA)"
 
-docker-push:
+docker-push: docker-build
 	@echo "Pushing Docker image..."
-	# ISSUE 6: Hardcoded registry credentials (security issue!)
-	echo "mypassword" | docker login $(DOCKER_REGISTRY) -u myuser --password-stdin
-	# ISSUE 7: Only pushing latest, not version tag
-	docker tag $(IMAGE_NAME):latest $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
-	docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
+	@if [ -z "$$DOCKER_USERNAME" ] || [ -z "$$DOCKER_PASSWORD" ]; then \
+		echo "Error: DOCKER_USERNAME and DOCKER_PASSWORD must be set"; \
+		exit 1; \
+	fi
+	@echo "$$DOCKER_PASSWORD" | docker login $(DOCKER_REGISTRY) -u "$$DOCKER_USERNAME" --password-stdin
+	@docker tag $(IMAGE_NAME):latest $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
+	@docker tag $(IMAGE_NAME):$(VERSION) $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)
+	@docker tag $(IMAGE_NAME):$(VERSION)-$(GIT_SHA) $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-$(GIT_SHA)
+	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
+	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)
+	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-$(GIT_SHA)
+	@echo "✓ Images pushed: latest, $(VERSION), $(VERSION)-$(GIT_SHA)"
 
 deploy:
 	@echo "Deploying to Cloud Foundry..."
-	# ISSUE 8: No check if cf CLI is installed or logged in
-	# ISSUE 9: VERSION environment variable not normalized (still has -SNAPSHOT)
-	cf push go-app-demo -f manifest.yml
-	# ISSUE 10: No rollback mechanism or deployment verification
+	@command -v cf >/dev/null 2>&1 || { echo "Error: cf CLI is not installed"; exit 1; }
+	@cf target >/dev/null 2>&1 || { echo "Error: Not logged in to Cloud Foundry"; exit 1; }
+	@echo "Normalizing VERSION to $(VERSION) (stripped -SNAPSHOT)"
+	@sed -i.bak 's/VERSION:.*/VERSION: $(VERSION)/' manifest.yml && rm manifest.yml.bak
+	@cf push go-app-demo -f manifest.yml
+	@echo "Verifying deployment..."
+	@sleep 5
+	@cf app go-app-demo
+	@echo "✓ Deployment complete"
+
+rollback:
+	@echo "Rolling back to previous version..."
+	@command -v cf >/dev/null 2>&1 || { echo "Error: cf CLI is not installed"; exit 1; }
+	@cf target >/dev/null 2>&1 || { echo "Error: Not logged in to Cloud Foundry"; exit 1; }
+	@cf rollback go-app-demo
+	@echo "✓ Rollback complete"
 
 clean:
 	@echo "Cleaning up..."
-	rm -f go-app-demo
-	# ISSUE 11: Doesn't clean Docker images or test artifacts
+	@rm -f go-app-demo
+	@rm -f coverage.out
+	@rm -f *.test
+	@docker rmi $(IMAGE_NAME):latest $(IMAGE_NAME):$(VERSION) 2>/dev/null || true
+	@echo "✓ Cleanup complete"
