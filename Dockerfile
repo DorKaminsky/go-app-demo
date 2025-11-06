@@ -18,7 +18,8 @@ COPY VERSION ./
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o go-app-demo .
 
 # Runtime stage - use minimal alpine image
-FROM public.int.repositories.cloud.sap/alpine:latest
+# Using Docker Hub directly as SAP Artifactory alpine has issues
+FROM alpine:latest
 
 WORKDIR /app
 
