@@ -22,12 +22,12 @@ FROM public.int.repositories.cloud.sap/alpine:latest
 
 WORKDIR /app
 
-# Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates
-
-# Create non-root user for security
-RUN addgroup -g 1000 appuser && \
-    adduser -D -u 1000 -G appuser appuser
+# Install ca-certificates and wget, create non-root user
+RUN apk update && \
+    apk add --no-cache ca-certificates wget && \
+    addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser && \
+    rm -rf /var/cache/apk/*
 
 # Copy only the binary and VERSION file
 COPY --from=builder /app/go-app-demo .
