@@ -171,8 +171,8 @@ jobs:
           cf login -a ${{ secrets.CF_API }} \
             -u ${{ secrets.CF_USERNAME }} \
             -p ${{ secrets.CF_PASSWORD }} \
-            -o ${{ secrets.CF_ORG }} \
-            -s ${{ secrets.CF_SPACE }}
+            -o ${{ vars.CF_ORG }} \
+            -s ${{ vars.CF_SPACE }}
 
       - name: Normalize VERSION
         run: |
