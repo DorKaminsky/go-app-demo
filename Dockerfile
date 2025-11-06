@@ -1,5 +1,6 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+# Using Artifactory mirror to avoid Docker Hub rate limits
+FROM public.int.repositories.cloud.sap/golang:1.22-alpine AS builder
 
 WORKDIR /app
 
@@ -17,7 +18,7 @@ COPY VERSION ./
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o go-app-demo .
 
 # Runtime stage - use minimal alpine image
-FROM alpine:latest
+FROM public.int.repositories.cloud.sap/alpine:latest
 
 WORKDIR /app
 
