@@ -1,6 +1,6 @@
 # Build stage
 # Using Artifactory mirror to avoid Docker Hub rate limits
-FROM public.int.repositories.cloud.sap/golang:1.22-alpine AS builder
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
