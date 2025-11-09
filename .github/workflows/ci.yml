@@ -164,27 +164,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install CF CLI v8 (no sudo)
-        run: |
-          set -euxo pipefail
-          CF_VERSION=8.16.0
-          curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=${CF_VERSION}&source=github" -o cf.tgz
-          tar -xzf cf.tgz
-          mkdir -p "$HOME/.local/bin"
-          mv cf "$HOME/.local/bin/cf"
-          chmod +x "$HOME/.local/bin/cf"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          cf version
+      - name: Setup CF CLI for DEV
+        uses: vchrisb/setup-cf@v3           # use a stable version tag (v3) not v0
+        with:
+          api: ${{ secrets.CF_API }}        # e.g. https://api.cf.stagingaws.hanavlab.ondemand.com
+          grant_type: password              # default is “password” if you use username/password
+          username: ${{ secrets.CF_USERNAME }}
+          password: ${{ secrets.CF_PASSWORD }}
+          origin: uaa                       # if you need a custom origin (e.g. SAP UAA)
+          org: ${{ vars.CF_ORG }}
+          space: ${{ vars.CF_SPACE }}
+          version: 8.16.0                   # specify the version of CF CLI you need
+          skip_ssl_validation: false        # optional, only if you’re skipping SSL (not recommended)
 
 
 
-      - name: CF Login
-        run: |
-          cf login -a ${{ secrets.CF_API }} \
-            -u ${{ secrets.CF_USERNAME }} \
-            -p ${{ secrets.CF_PASSWORD }} \
-            -o ${{ vars.CF_ORG }} \
-            -s ${{ vars.CF_SPACE }}
+
+      # - name: CF Login
+      #   run: |
+      #     cf login -a ${{ secrets.CF_API }} \
+      #       -u ${{ secrets.CF_USERNAME }} \
+      #       -p ${{ secrets.CF_PASSWORD }} \
+      #       -o ${{ vars.CF_ORG }} \
+      #       -s ${{ vars.CF_SPACE }}
 
       - name: Normalize VERSION
         run: |
