@@ -154,66 +154,71 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy to Cloud Foundry
-    runs-on: [ubuntu-latest]
-    needs: docker-push
+  # deploy:
+  #   name: Deploy to Cloud Foundry
+  #   runs-on: [ubuntu-latest]
+  #   needs: docker-push
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
 
-      - name: Setup CF CLI for DEV
-        uses: vchrisb/setup-cf@v3           # use a stable version tag (v3) not v0
-        with:
-          api: ${{ secrets.CF_API }}        # e.g. https://api.cf.stagingaws.hanavlab.ondemand.com
-          grant_type: password              # default is “password” if you use username/password
-          username: ${{ secrets.CF_USERNAME }}
-          password: ${{ secrets.CF_PASSWORD }}
-          origin: uaa                       # if you need a custom origin (e.g. SAP UAA)
-          org: ${{ vars.CF_ORG }}
-          space: ${{ vars.CF_SPACE }}
-          version: 8.16.0                   # specify the version of CF CLI you need
-          skip_ssl_validation: false        # optional, only if you’re skipping SSL (not recommended)
+  #     - name: Install CF CLI
+  #       run: |
+  #         if ! command -v cf &> /dev/null; then
+  #           echo "Installing CF CLI..."
+  #           brew tap cloudfoundry/tap
+  #           brew install cloudfoundry/tap/cf-cli@8
+  #         else
+  #           echo "CF CLI already installed"
+  #         fi
+  #         cf version
+
+  #     - name: Login to Cloud Foundry
+  #       run: |
+  #         cf login -a ${{ secrets.CF_API }} \
+  #           -u ${{ secrets.CF_USERNAME }} \
+  #           -p ${{ secrets.CF_PASSWORD }} \
+  #           -o ${{ vars.CF_ORG }} \
+  #           -s ${{ vars.CF_SPACE }}
 
 
 
+  #     # - name: CF Login
+  #     #   run: |
+  #     #     cf login -a ${{ secrets.CF_API }} \
+  #     #       -u ${{ secrets.CF_USERNAME }} \
+  #     #       -p ${{ secrets.CF_PASSWORD }} \
+  #     #       -o ${{ vars.CF_ORG }} \
+  #     #       -s ${{ vars.CF_SPACE }}
 
-      # - name: CF Login
-      #   run: |
-      #     cf login -a ${{ secrets.CF_API }} \
-      #       -u ${{ secrets.CF_USERNAME }} \
-      #       -p ${{ secrets.CF_PASSWORD }} \
-      #       -o ${{ vars.CF_ORG }} \
-      #       -s ${{ vars.CF_SPACE }}
+  #     - name: Normalize VERSION
+  #       run: |
+  #         RAW_VERSION=$(cat VERSION)
+  #         VERSION=$(echo $RAW_VERSION | sed 's/-SNAPSHOT//')
+  #         echo "Normalized VERSION: $VERSION"
+  #         sed -i "s/VERSION:.*/VERSION: $VERSION/" manifest.yml
 
-      - name: Normalize VERSION
-        run: |
-          RAW_VERSION=$(cat VERSION)
-          VERSION=$(echo $RAW_VERSION | sed 's/-SNAPSHOT//')
-          echo "Normalized VERSION: $VERSION"
-          sed -i "s/VERSION:.*/VERSION: $VERSION/" manifest.yml
+  #     - name: Deploy to Cloud Foundry
+  #       id: deploy
+  #       run: |
+  #         cf push go-app-demo -f manifest.yml
+  #         echo "deployed=true" >> $GITHUB_OUTPUT
 
-      - name: Deploy to Cloud Foundry
-        id: deploy
-        run: |
-          cf push go-app-demo -f manifest.yml
-          echo "deployed=true" >> $GITHUB_OUTPUT
+  #     - name: Verify deployment
+  #       if: steps.deploy.outputs.deployed == 'true'
+  #       run: |
+  #         echo "Waiting for app to start..."
+  #         sleep 10
+  #         APP_URL=$(cf app go-app-demo | grep routes: | awk '{print $2}')
+  #         echo "Testing health endpoint..."
+  #         curl -f "https://$APP_URL/health" || exit 1
+  #         echo "Testing info endpoint..."
+  #         curl -f "https://$APP_URL/info" || exit 1
+  #         echo "✓ Deployment verified successfully"
 
-      - name: Verify deployment
-        if: steps.deploy.outputs.deployed == 'true'
-        run: |
-          echo "Waiting for app to start..."
-          sleep 10
-          APP_URL=$(cf app go-app-demo | grep routes: | awk '{print $2}')
-          echo "Testing health endpoint..."
-          curl -f "https://$APP_URL/health" || exit 1
-          echo "Testing info endpoint..."
-          curl -f "https://$APP_URL/info" || exit 1
-          echo "✓ Deployment verified successfully"
-
-      - name: Rollback on failure
-        if: failure() && steps.deploy.outputs.deployed == 'true'
-        run: |
-          echo "Deployment failed, rolling back..."
-          cf rollback go-app-demo || echo "Rollback failed or not available"
+  #     - name: Rollback on failure
+  #       if: failure() && steps.deploy.outputs.deployed == 'true'
+  #       run: |
+  #         echo "Deployment failed, rolling back..."
+  #         cf rollback go-app-demo || echo "Rollback failed or not available"
