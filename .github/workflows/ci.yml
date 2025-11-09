@@ -158,7 +158,7 @@ jobs:
   deploy:
     name: Deploy to Cloud Foundry
     runs-on: [ self-hosted, solinas ]
-    # needs: docker-push
+    needs: docker-push
 
     steps:
       - name: Checkout code
