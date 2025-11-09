@@ -16,9 +16,10 @@ applications:
     health-check-http-endpoint: /health
     health-check-invocation-timeout: 5
     
-    # Route configuration
-    routes:
-      - route: go-app-demo.example.com
+    # Route configuration - let CF auto-generate the route
+    # routes:
+    #   - route: go-app-demo.example.com
+    random-route: true
     
     # Resource limits and scaling
     processes:
