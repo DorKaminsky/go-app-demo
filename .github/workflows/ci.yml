@@ -164,12 +164,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Check CF CLI
+      - name: Install CF CLI
         run: |
           if ! command -v cf &> /dev/null; then
-            echo "CF CLI not found. Please install it on the runner."
-            echo "On macOS: brew install cloudfoundry/tap/cf-cli@8"
-            exit 1
+            echo "CF CLI not found. Installing..."
+            brew tap cloudfoundry/tap
+            brew install cloudfoundry/tap/cf-cli@8
+          else
+            echo "CF CLI already installed"
           fi
           cf version
 
