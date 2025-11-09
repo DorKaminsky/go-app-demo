@@ -4,8 +4,9 @@ applications:
     memory: 256M
     disk_quota: 512M
     instances: 2
-    buildpacks:
-      - go_buildpack
+    # Deploy from Docker Hub image (publicly accessible)
+    docker:
+      image: ${DOCKERHUB_USERNAME}/go-app-demo:latest
     
     # VERSION is normalized by CI/CD pipeline (strips -SNAPSHOT)
     env:
