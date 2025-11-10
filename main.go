@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
-	"log"
+	"fmt"
+	"io/ioutil" // ISSUE 1: Using deprecated package (should use os.ReadFile)
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -21,61 +19,33 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
-// getVersion reads version from env var or VERSION file and strips -SNAPSHOT suffix
+// getVersion reads version from env var or VERSION file
 func getVersion() string {
-	// Try environment variable first
 	version := os.Getenv("VERSION")
 	if version == "" {
-		// Read from VERSION file
-		data, err := os.ReadFile("VERSION")
+		data, err := ioutil.ReadFile("VERSION")
 		if err != nil {
-			log.Printf("Warning: Could not read VERSION file: %v", err)
 			return "unknown"
 		}
 		version = strings.TrimSpace(string(data))
 	}
 
-	// Strip -SNAPSHOT suffix
-	version = strings.TrimSuffix(version, "-SNAPSHOT")
+	// ISSUE 2: Not stripping -SNAPSHOT suffix
 	return version
 }
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {
-	// Only allow GET method
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	response := InfoResponse{
 		Version:    getVersion(),
 		DeployedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(response) // ISSUE 3: Ignoring error
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	// Only allow GET method
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	response := HealthResponse{
-		Status: "UP",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding health response: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
-}
+// ISSUE 4: Missing /health endpoint
+// Health check is required for Cloud Foundry
 
 func main() {
 	port := os.Getenv("PORT")
@@ -83,39 +53,10 @@ func main() {
 		port = "8080"
 	}
 
-	// Set up routes
 	http.HandleFunc("/info", infoHandler)
-	http.HandleFunc("/health", healthHandler)
+	// ISSUE 4: No /health endpoint registered
 
-	// Create server with timeouts
-	server := &http.Server{
-		Addr:         ":" + port,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
-	// Start server in goroutine
-	go func() {
-		log.Printf("Server starting on port %s", port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
-		}
-	}()
-
-	// Graceful shutdown handling
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("Server shutting down gracefully...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
-	}
-
-	log.Println("Server stopped")
+	// ISSUE 5: No graceful shutdown - server stops immediately on SIGTERM
+	fmt.Printf("Server starting on port %s\n", port)
+	http.ListenAndServe(":"+port, nil) // ISSUE 6: Ignoring error
 }

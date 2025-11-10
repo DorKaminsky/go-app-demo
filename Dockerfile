@@ -1,52 +1,32 @@
 # Build stage
-# Using Artifactory mirror to avoid Docker Hub rate limits
-FROM golang:1.22-alpine AS builder
+FROM golang:1.21-alpine AS builder  # ISSUE 7: Wrong Go version (should be 1.22)
 
 WORKDIR /app
 
-# Copy go.mod first for better layer caching
-COPY go.mod ./
+# ISSUE 8: Bad layer caching - copying everything before go mod download
+COPY . .
 
-# Download dependencies (cached if go.mod hasn't changed)
 RUN go mod download
 
-# Copy source code
-COPY main.go ./
-COPY VERSION ./
+# Build application
+RUN go build -o go-app-demo .
 
-# Build with optimization flags to reduce binary size
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o go-app-demo .
-
-# Runtime stage - use minimal alpine image
-# Using Docker Hub directly as SAP Artifactory alpine has issues
+# Runtime stage
 FROM alpine:latest
 
 WORKDIR /app
 
-# Install ca-certificates and wget, create non-root user
-RUN apk update && \
-    apk add --no-cache ca-certificates wget && \
-    addgroup -g 1000 appuser && \
-    adduser -D -u 1000 -G appuser appuser && \
-    rm -rf /var/cache/apk/*
+# ISSUE 9: Running as root user (security risk)
+# Should create non-root user
 
-# Copy only the binary and VERSION file
+# Copy binary and VERSION
 COPY --from=builder /app/go-app-demo .
 COPY --from=builder /app/VERSION .
 
-# Change ownership to non-root user
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
-# Use environment variable for port
 ENV PORT=8080
 EXPOSE ${PORT}
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
+# ISSUE 10: No HEALTHCHECK defined
+# Docker has no way to check if container is healthy
 
-# Application handles graceful shutdown via signals
 CMD ["./go-app-demo"]

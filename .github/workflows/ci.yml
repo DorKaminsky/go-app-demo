@@ -8,209 +8,116 @@ on:
     branches:
       - main
 
-# Prevent concurrent deployments
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 env:
   GO_VERSION: '1.22'
-  IMAGE_PATH: ${{ vars.IMAGE_PATH || '' }}
   IMAGE_NAME: go-app-demo
 
 jobs:
-   build:
-     name: Build Application
-     runs-on: [ubuntu-latest]
-     steps:
-       - name: Checkout code
-         uses: actions/checkout@v3
+  build:
+    name: Build Application
+    runs-on: [ubuntu-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-       - name: Set up Go
-         uses: actions/setup-go@v4
-         with:
-           go-version: ${{ env.GO_VERSION }}
-           cache: true
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-       - name: Build
-         run: make build
+      - name: Build
+        run: make build
 
-       - name: Upload binary artifact
-         uses: actions/upload-artifact@v4
-         with:
-           name: go-app-demo
-           path: go-app-demo
-           retention-days: 1
+  test:
+    name: Run Tests
+    runs-on: [ubuntu-latest]
+    # ISSUE 11: Missing needs: build dependency
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-   test:
-     name: Run Tests
-     runs-on: [ubuntu-latest]
-     needs: build
-     steps:
-       - name: Checkout code
-         uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-       - name: Set up Go
-         uses: actions/setup-go@v4
-         with:
-           go-version: ${{ env.GO_VERSION }}
-           cache: true
+      - name: Run tests
+        run: make test
 
-       - name: Run tests
-         run: make test
+  lint:
+    name: Lint Code
+    runs-on: [ubuntu-latest]
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-       - name: Run tests with coverage
-         run: make coverage
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-       - name: Upload coverage report
-         uses: actions/upload-artifact@v4
-         with:
-           name: coverage-report
-           path: coverage.out
-           retention-days: 7
+      - name: Run linter
+        run: make lint
 
-   lint:
-     name: Lint Code
-     runs-on: [ubuntu-latest]
-     needs: build
-     steps:
-       - name: Checkout code
-         uses: actions/checkout@v3
+  docker-build:
+    name: Build Docker Image
+    runs-on: [ubuntu-latest]
+    needs: [test, lint]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-       - name: Set up Go
-         uses: actions/setup-go@v4
-         with:
-           go-version: ${{ env.GO_VERSION }}
-           cache: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-       - name: Run linter
-         run: make lint
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-   docker-build:
-     name: Build Docker Image
-     runs-on: [ubuntu-latest]
-     needs: [test, lint]
-     steps:
-       - name: Checkout code
-         uses: actions/checkout@v3
+      # ISSUE 12: No Docker layer caching configured
+      # This makes builds slow and wastes CI time
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:latest
+          # Missing: cache-from and cache-to
 
-       - name: Set up Docker Buildx
-         uses: docker/setup-buildx-action@v2
+  docker-push:
+    name: Push Docker Image
+    runs-on: [ubuntu-latest]
+    needs: docker-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-       - name: Log in to Docker Hub (for base images)
-         uses: docker/login-action@v2
-         with:
-           username: ${{ vars.DOCKERHUB_USERNAME }}
-           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-       - name: Build Docker image
-         uses: docker/build-push-action@v4
-         with:
-           context: .
-           push: false
-           tags: |
-             ${{ env.IMAGE_NAME }}:latest
-             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-           cache-from: type=gha
-           cache-to: type=gha,mode=max
+      # ISSUE 13: Hardcoded credentials (CRITICAL SECURITY ISSUE!)
+      - name: Docker login
+        run: |
+          echo "hardcoded-password-123" | docker login myregistry.example.com -u deployuser --password-stdin
 
-   docker-push:
-     name: Push Docker Image
-     runs-on: [ubuntu-latest]
-     needs: docker-build
+      - name: Extract version
+        id: version
+        run: |
+          RAW_VERSION=$(cat VERSION)
+          VERSION=$(echo $RAW_VERSION | sed 's/-SNAPSHOT//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-     # if: github.ref == 'refs/heads/main'
-     steps:
-       - name: Checkout code
-         uses: actions/checkout@v3
-
-       - name: Set up Docker Buildx
-         uses: docker/setup-buildx-action@v2
-
-       - name: Log in to Docker Hub
-         uses: docker/login-action@v2
-         with:
-           username: ${{ vars.DOCKERHUB_USERNAME }}
-           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-       - name: Extract version
-         id: version
-         run: |
-           RAW_VERSION=$(cat VERSION)
-           VERSION=$(echo $RAW_VERSION | sed 's/-SNAPSHOT//')
-           echo "version=$VERSION" >> $GITHUB_OUTPUT
-           echo "Normalized version: $VERSION"
-
-       - name: Build and push Docker image
-         uses: docker/build-push-action@v4
-         with:
-           context: .
-           push: true
-           tags: |
-             ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-             ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-             ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-${{ github.sha }}
-           cache-from: type=gha
-           cache-to: type=gha,mode=max
-
-#  deploy:
-#    name: Deploy to Cloud Foundry
-#    runs-on: [ubuntu-latest]
-#    # needs: docker-push
-#    # if: github.ref == 'refs/heads/main'
-#
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v3
-#
-#      - name: Install CF CLI
-#        run: |
-#          if ! command -v cf &> /dev/null; then
-#            echo "Installing CF CLI for Ubuntu..."
-#            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
-#            echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
-#            sudo apt-get update
-#            sudo apt-get install -y cf8-cli
-#          else
-#            echo "CF CLI already installed"
-#          fi
-#          cf version
-#
-#      - name: Login to Cloud Foundry
-#        run: |
-#          cf login -a ${{ secrets.CF_API }} \
-#            -u ${{ secrets.CF_USERNAME }} \
-#            -p ${{ secrets.CF_PASSWORD }} \
-#            -o ${{ vars.CF_ORG }} \
-#            -s ${{ vars.CF_SPACE }}
-#
-#      - name: Normalize VERSION
-#        run: |
-#          RAW_VERSION=$(cat VERSION)
-#          VERSION=$(echo $RAW_VERSION | sed 's/-SNAPSHOT//')
-#          echo "Normalized VERSION: $VERSION"
-#          sed -i "s/VERSION:.*/VERSION: $VERSION/" manifest.yml
-#
-#      - name: Deploy to Cloud Foundry
-#        id: deploy
-#        run: |
-#          cf push go-app-demo -f manifest.yml
-#          echo "deployed=true" >> $GITHUB_OUTPUT
-#
-#      - name: Verify deployment
-#        if: steps.deploy.outputs.deployed == 'true'
-#        run: |
-#          echo "Waiting for app to start..."
-#          sleep 10
-#          APP_URL=$(cf app go-app-demo | grep routes: | awk '{print $2}')
-#          echo "Testing health endpoint..."
-#          curl -f "https://$APP_URL/health" || exit 1
-#          echo "Testing info endpoint..."
-#          curl -f "https://$APP_URL/info" || exit 1
-#          echo "✓ Deployment verified successfully"
-#
-#      - name: Rollback on failure
-#        if: failure() && steps.deploy.outputs.deployed == 'true'
-#        run: |
-#          echo "Deployment failed, rolling back..."
-#          cf rollback go-app-demo || echo "Rollback failed or not available"
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
