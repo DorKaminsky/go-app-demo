@@ -154,33 +154,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # deploy:
-  #   name: Deploy to Cloud Foundry
-  #   runs-on: [ubuntu-latest]
-  #   needs: docker-push
+  deploy:
+    name: Deploy to Cloud Foundry
+    runs-on: [ubuntu-latest]
+    needs: docker-push
 
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  #     - name: Install CF CLI
-  #       run: |
-  #         if ! command -v cf &> /dev/null; then
-  #           echo "Installing CF CLI..."
-  #           brew tap cloudfoundry/tap
-  #           brew install cloudfoundry/tap/cf-cli@8
-  #         else
-  #           echo "CF CLI already installed"
-  #         fi
-  #         cf version
+      - name: Install CF CLI
+        run: |
+          if ! command -v cf &> /dev/null; then
+            echo "Installing CF CLI..."
+            brew tap cloudfoundry/tap
+            brew install cloudfoundry/tap/cf-cli@8
+          else
+            echo "CF CLI already installed"
+          fi
+          cf version
 
-  #     - name: Login to Cloud Foundry
-  #       run: |
-  #         cf login -a ${{ secrets.CF_API }} \
-  #           -u ${{ secrets.CF_USERNAME }} \
-  #           -p ${{ secrets.CF_PASSWORD }} \
-  #           -o ${{ vars.CF_ORG }} \
-  #           -s ${{ vars.CF_SPACE }}
+      - name: Login to Cloud Foundry
+        run: |
+          cf login -a ${{ secrets.CF_API }} \
+            -u ${{ secrets.CF_USERNAME }} \
+            -p ${{ secrets.CF_PASSWORD }} \
+            -o ${{ vars.CF_ORG }} \
+            -s ${{ vars.CF_SPACE }}
 
 
 
