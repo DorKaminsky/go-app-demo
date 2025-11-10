@@ -6,4 +6,7 @@ applications:
     buildpacks:
       - go_buildpack
     env:
-      VERSION: 1.189.0-SNAPSHOT
+      GOVERSION: go1.22
+      GOPACKAGENAME: github.com/example/go-app-demo
+    health-check-type: http
+    health-check-http-endpoint: /health
