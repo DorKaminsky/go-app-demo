@@ -158,6 +158,7 @@ jobs:
     name: Deploy to Cloud Foundry
     runs-on: [ubuntu-latest]
     needs: docker-push
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
@@ -166,9 +167,11 @@ jobs:
       - name: Install CF CLI
         run: |
           if ! command -v cf &> /dev/null; then
-            echo "Installing CF CLI..."
-            brew tap cloudfoundry/tap
-            brew install cloudfoundry/tap/cf-cli@8
+            echo "Installing CF CLI for Ubuntu..."
+            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
+            echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+            sudo apt-get update
+            sudo apt-get install -y cf8-cli
           else
             echo "CF CLI already installed"
           fi
@@ -182,43 +185,33 @@ jobs:
             -o ${{ vars.CF_ORG }} \
             -s ${{ vars.CF_SPACE }}
 
+      - name: Normalize VERSION
+        run: |
+          RAW_VERSION=$(cat VERSION)
+          VERSION=$(echo $RAW_VERSION | sed 's/-SNAPSHOT//')
+          echo "Normalized VERSION: $VERSION"
+          sed -i "s/VERSION:.*/VERSION: $VERSION/" manifest.yml
 
+      - name: Deploy to Cloud Foundry
+        id: deploy
+        run: |
+          cf push go-app-demo -f manifest.yml
+          echo "deployed=true" >> $GITHUB_OUTPUT
 
-  #     # - name: CF Login
-  #     #   run: |
-  #     #     cf login -a ${{ secrets.CF_API }} \
-  #     #       -u ${{ secrets.CF_USERNAME }} \
-  #     #       -p ${{ secrets.CF_PASSWORD }} \
-  #     #       -o ${{ vars.CF_ORG }} \
-  #     #       -s ${{ vars.CF_SPACE }}
+      - name: Verify deployment
+        if: steps.deploy.outputs.deployed == 'true'
+        run: |
+          echo "Waiting for app to start..."
+          sleep 10
+          APP_URL=$(cf app go-app-demo | grep routes: | awk '{print $2}')
+          echo "Testing health endpoint..."
+          curl -f "https://$APP_URL/health" || exit 1
+          echo "Testing info endpoint..."
+          curl -f "https://$APP_URL/info" || exit 1
+          echo "✓ Deployment verified successfully"
 
-  #     - name: Normalize VERSION
-  #       run: |
-  #         RAW_VERSION=$(cat VERSION)
-  #         VERSION=$(echo $RAW_VERSION | sed 's/-SNAPSHOT//')
-  #         echo "Normalized VERSION: $VERSION"
-  #         sed -i "s/VERSION:.*/VERSION: $VERSION/" manifest.yml
-
-  #     - name: Deploy to Cloud Foundry
-  #       id: deploy
-  #       run: |
-  #         cf push go-app-demo -f manifest.yml
-  #         echo "deployed=true" >> $GITHUB_OUTPUT
-
-  #     - name: Verify deployment
-  #       if: steps.deploy.outputs.deployed == 'true'
-  #       run: |
-  #         echo "Waiting for app to start..."
-  #         sleep 10
-  #         APP_URL=$(cf app go-app-demo | grep routes: | awk '{print $2}')
-  #         echo "Testing health endpoint..."
-  #         curl -f "https://$APP_URL/health" || exit 1
-  #         echo "Testing info endpoint..."
-  #         curl -f "https://$APP_URL/info" || exit 1
-  #         echo "✓ Deployment verified successfully"
-
-  #     - name: Rollback on failure
-  #       if: failure() && steps.deploy.outputs.deployed == 'true'
-  #       run: |
-  #         echo "Deployment failed, rolling back..."
-  #         cf rollback go-app-demo || echo "Rollback failed or not available"
+      - name: Rollback on failure
+        if: failure() && steps.deploy.outputs.deployed == 'true'
+        run: |
+          echo "Deployment failed, rolling back..."
+          cf rollback go-app-demo || echo "Rollback failed or not available"
