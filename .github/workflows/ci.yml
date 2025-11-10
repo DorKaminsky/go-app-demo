@@ -15,7 +15,6 @@ concurrency:
 
 env:
   GO_VERSION: '1.22'
-  DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY || 'myregistry.example.com' }}
   IMAGE_PATH: ${{ vars.IMAGE_PATH || '' }}
   IMAGE_NAME: go-app-demo
 
