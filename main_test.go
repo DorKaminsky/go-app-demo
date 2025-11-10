@@ -9,7 +9,6 @@ import (
 )
 
 func TestInfoHandler(t *testing.T) {
-	// Set version for testing
 	os.Setenv("VERSION", "1.189.0-SNAPSHOT")
 	defer os.Unsetenv("VERSION")
 
@@ -33,8 +32,6 @@ func TestInfoHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// ISSUE: This test will fail because version should be "1.189.0" not "1.189.0-SNAPSHOT"
-	// The test expects the bug to exist
 	if response.Version == "" {
 		t.Error("version should not be empty")
 	}
@@ -45,7 +42,6 @@ func TestInfoHandler(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
-	// Test with environment variable
 	os.Setenv("VERSION", "2.0.0-SNAPSHOT")
 	defer os.Unsetenv("VERSION")
 
@@ -53,6 +49,4 @@ func TestGetVersion(t *testing.T) {
 	if version == "" {
 		t.Error("version should not be empty")
 	}
-
-	// ISSUE: Should test that -SNAPSHOT is stripped, but doesn't
 }

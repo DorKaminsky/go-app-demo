@@ -8,13 +8,7 @@ on:
     branches:
       - main
 
-# ISSUE 1: Missing environment variables definition at workflow level
-# ISSUE 2: No concurrency control - multiple deployments can run simultaneously
-
 jobs:
-  # ISSUE 3: Jobs run in parallel without proper dependencies
-  # This can cause race conditions
-  
   build:
     name: Build Application
     runs-on: [ self-hosted, solinas ]
@@ -22,7 +16,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ISSUE 4: Using older Go version instead of 1.22
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -34,7 +27,6 @@ jobs:
   test:
     name: Run Tests
     runs-on: [ self-hosted, solinas ]
-    # ISSUE 5: Missing 'needs: build' - should run after build
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -59,50 +51,42 @@ jobs:
         with:
           go-version: '1.21'
 
-      # ISSUE 6: Makefile doesn't have 'lint' target, this will fail
       - name: Run linter
         run: make lint
 
   docker-build:
     name: Build Docker Image
     runs-on: [ self-hosted, solinas ]
-    # ISSUE 7: Should depend on test and lint passing
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ISSUE 8: No Docker layer caching configured
       - name: Build Docker image
         run: make docker-build
 
   docker-push:
     name: Push Docker Image
     runs-on: [ self-hosted, solinas ]
-    # ISSUE 9: Missing proper job dependency - should need docker-build
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ISSUE 10: Hardcoded credentials in workflow (SECURITY ISSUE!)
       - name: Docker login
         run: |
           echo "hardcoded-password-123" | docker login myregistry.example.com -u deployuser --password-stdin
 
-      # ISSUE 11: No proper image tagging with version or commit SHA
       - name: Push Docker image
         run: make docker-push
 
   deploy:
     name: Deploy to Cloud Foundry
     runs-on: [ self-hosted, solinas ]
-    # ISSUE 12: Missing dependencies - should need docker-push
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ISSUE 13: Hardcoded CF credentials (SECURITY ISSUE!)
       - name: Install CF CLI
         run: |
           wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
@@ -114,9 +98,5 @@ jobs:
         run: |
           cf login -a https://api.cf.example.com -u admin@example.com -p "SuperSecret123" -o my-org -s dev
 
-      # ISSUE 14: VERSION still has -SNAPSHOT, deployment will use wrong version
       - name: Deploy
         run: make deploy
-
-      # ISSUE 15: No deployment verification or smoke tests
-      # ISSUE 16: No rollback mechanism if deployment fails
