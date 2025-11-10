@@ -1,17 +1,13 @@
-FROM golang:1.21-alpine AS builder
-
-COPY . .
-
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod ./
 RUN go mod download
-
+COPY . .
 RUN go build -o go-app-demo .
 
-FROM golang:1.21-alpine
-
-
+FROM alpine:3.18
+WORKDIR /app
 COPY --from=builder /app/go-app-demo .
 COPY --from=builder /app/VERSION .
-
 EXPOSE 8080
-
 CMD ["./go-app-demo"]

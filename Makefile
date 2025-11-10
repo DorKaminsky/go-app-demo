@@ -6,15 +6,20 @@ VERSION=$(shell cat VERSION)
 
 build:
 	@echo "Building Go application..."
-	go build go-app-demo .
+	go build -o go-app-demo .
 
 test:
 	@echo "Running tests..."
-	go tests -v ./...
+	go test -v ./...
+
+coverage:
+	@echo "Running coverage..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
 
 docker-build:
 	@echo "Building Docker image..."
-	docker build $(IMAGE_NAME):latest .
+	docker build -t $(IMAGE_NAME):latest .
 
 docker-push:
 	@echo "Pushing Docker image..."
@@ -29,3 +34,7 @@ deploy:
 clean:
 	@echo "Cleaning up..."
 	rm -f go-app-demo
+
+lint:
+	@echo "Running golint..."
+	golint ./...

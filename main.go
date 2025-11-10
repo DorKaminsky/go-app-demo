@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// InfoResponse represents the version and deployment time returned by the /info endpoint.
 type InfoResponse struct {
 	Version    string `json:"version"`
 	DeployedAt string `json:"deployed_at"`
@@ -17,16 +18,18 @@ type InfoResponse struct {
 
 func getVersion() string {
 	version := os.Getenv("VERSION")
-	if version != "" {
-		return version
+	if version == "" {
+		data, err := ioutil.ReadFile("VERSION")
+		if err != nil {
+			return "unknown"
+		}
+		version = strings.TrimSpace(string(data))
 	}
-
-	data, err := ioutil.ReadFile("VERSION")
-	if err != nil {
-		return "unknown"
+	// Normalize: strip -SNAPSHOT or any suffix after a dash
+	if idx := strings.Index(version, "-"); idx != -1 {
+		version = version[:idx]
 	}
-
-	return strings.TrimSpace(string(data))
+	return version
 }
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {
@@ -39,6 +42,11 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -46,6 +54,7 @@ func main() {
 	}
 
 	http.HandleFunc("/info", infoHandler)
+	http.HandleFunc("/health", healthHandler)
 
 	fmt.Printf("Server starting on port %s\n", port)
 	http.ListenAndServe(":"+port, nil)
