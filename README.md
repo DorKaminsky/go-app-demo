@@ -82,6 +82,8 @@ curl http://localhost:8080/info
 1. **Working Pipeline**: All CI/CD jobs pass (except deploy - see below)
 2. **Pull Request**: To your fork's main branch with clear summary
 
+**Note**: To get CI/CD working, you'll need to set up GitHub Secrets. See the **"Setting Up GitHub Secrets"** section in `candidate-setup-instructions.md`.
+
 ## 🧪 Testing Your Fixes
 
 ```bash
