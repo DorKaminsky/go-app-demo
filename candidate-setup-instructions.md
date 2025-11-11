@@ -207,18 +207,6 @@ To get the CI/CD pipeline working in your fork, you'll need to configure some se
 | `DOCKERHUB_USERNAME` | Your Docker Hub username | `your-dockerhub-username` |
 | `DOCKERHUB_TOKEN` | Docker Hub access token | (Create at hub.docker.com) |
 
-**Optional (for Cloud Foundry deployment testing):**
-
-| Secret/Variable Name | Type | Description |
-|---------------------|------|-------------|
-| `CF_API` | Secret | Cloud Foundry API endpoint |
-| `CF_USERNAME` | Secret | CF username |
-| `CF_PASSWORD` | Secret | CF password |
-| `CF_ORG` | Variable | CF organization |
-| `CF_SPACE` | Variable | CF space |
-
-**Note:** The Cloud Foundry deployment is commented out in the workflow, so those secrets are optional.
-
 ### Creating a Docker Hub Token:
 
 1. Go to https://hub.docker.com
