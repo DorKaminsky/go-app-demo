@@ -80,7 +80,9 @@ curl http://localhost:8080/info
 
 ## 📝 Deliverables
 1. **Working Pipeline**: All CI/CD jobs pass (except deploy - see below)
-2. **Pull Request**: To your fork's main branch with clear summary
+2. **Pull Request**: Create a PR from `fix/devops-issues` → `main` **in your fork** (NOT to the original repository)
+   - Clear summary of all fixes
+   - Description of issues found and resolved
 
 **Note**: To get CI/CD working, you'll need to set up GitHub Secrets. See the **"Setting Up GitHub Secrets"** section in `candidate-setup-instructions.md`.
 
@@ -106,27 +108,32 @@ curl http://localhost:8080/info | jq .version
 
 ## 🔧 About Cloud Foundry Deployment
 
-**Note**: The Cloud Foundry deployment in the CI/CD pipeline is commented out because it requires internal network access.
+**Note**: This assignment does NOT require a working Cloud Foundry deployment job in the CI/CD pipeline. You won't need actual Cloud Foundry access.
 
-**However**, you should still fix the deployment configuration:
+**What You Need to Fix**:
+1. **manifest.yml** - Ensure the configuration is production-ready:
+   - Health check endpoint points to `/health`
+   - VERSION is normalized (no `-SNAPSHOT`)
+   - All configuration is valid
 
-### What to Fix:
-1. **manifest.yml**
-2. **Makefile `deploy` target**
+2. **Makefile `deploy` target** - Verify the deployment logic:
+   - VERSION normalization works correctly
+   - Commands are properly structured
 
 ### How to Validate (Without Actually Deploying):
 ```bash
-# Check Makefile deploy logic
+# Check Makefile deploy logic (dry-run)
 make --dry-run deploy
-# Should show VERSION normalization
+# Should show VERSION normalization: 1.189.0 (not 1.189.0-SNAPSHOT)
 
 # Validate manifest.yml syntax
 cat manifest.yml
-# Check: health-check-http-endpoint: /health
-# Check: VERSION without -SNAPSHOT
+# Verify: health-check-http-endpoint: /health
+# Verify: VERSION is normalized
+# Verify: All YAML is valid
 ```
 
-**Why This Matters**: Shows you understand Cloud Foundry deployment even if you can't test it live.
+**Why This Matters**: Demonstrates you understand Cloud Foundry deployment configuration and can prepare deployment-ready manifests, even without live access to a CF environment.
 
 ## ✅ Success Checklist
 
@@ -143,12 +150,29 @@ Before submitting:
 
 **Remember**: Issues exist in MANY files. Don't stop early!
 
-## ❓ Help
+## ❓ Help & Troubleshooting
 
+### Getting Help
 - ✅ Use AI tools (ChatGPT, Claude, Copilot)
 - ✅ Google for solutions
 - ✅ Read error messages carefully
 - 📧 Email hiring team for clarification (not answers!)
+
+### Common Issues
+
+**Docker Hub Rate Limits**
+
+If you encounter errors like "toomanyrequests: You have reached your pull rate limit":
+
+```bash
+# Solution: Login to Docker Hub (free account)
+docker login
+
+# Enter your Docker Hub username and password
+# This increases your rate limit significantly
+```
+
+**Alternative**: Use authenticated pulls in your Dockerfile or switch to a different base image registry.
 
 ---
 

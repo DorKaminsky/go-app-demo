@@ -8,12 +8,13 @@ Thank you for your interest in our DevOps Engineer position! This document will 
 
 ## 🎯 Assessment Approach: Fork Workflow
 
-**Recommended Approach:** Fork the repository to your own GitHub account.
+**Approach:** Fork the repository to your own GitHub account to complete this assessment.
 
 **Why Fork?**
 - ✅ You have full control over your fork
-- ✅ You can commit and push freely
+- ✅ You can commit and push freely without restrictions
 - ✅ Easy to share your work via pull request
+- ✅ Allows GitHub Actions to run in your account
 
 ---
 
@@ -35,22 +36,11 @@ Before you begin, ensure you have:
 
 ## 🚀 Step-by-Step Setup
 
-### Step 1: Accept Repository Access
-
-You should have received a GitHub invitation email to access the repository.
-
-1. Open the invitation email
-2. Click the invitation link
-3. Click "Accept invitation" on GitHub
-
-**Note:** If you didn't receive an invitation, contact the hiring team.
-
----
-
-### Step 2: Fork the Repository
+### Step 1: Fork the Repository
 
 1. **Navigate to the repository:**
-   - Visit: `https://github.com/DorKaminsky/go-app-demo`
+   - You should have received a link to the repository from the hiring team
+   - Example: `https://github.com/ORGANIZATION/go-app-demo`
 
 2. **Click the Fork button:**
    - Look for the "Fork" button in the top-right corner of the page
@@ -69,7 +59,7 @@ You should have received a GitHub invitation email to access the repository.
 
 ---
 
-### Step 3: Clone Your Fork
+### Step 2: Clone Your Fork
 
 Open your terminal and run:
 
@@ -93,7 +83,7 @@ git remote -v
 
 ---
 
-### Step 4: Create Your Working Branch
+### Step 3: Create Your Working Branch
 
 Create a new branch for your fixes:
 
@@ -108,7 +98,7 @@ git branch
 
 ---
 
-### Step 5: Read the README
+### Step 4: Read the README
 
 Before starting, thoroughly read the README:
 
@@ -130,7 +120,7 @@ open README.md  # macOS
 
 ---
 
-### Step 6: Verify Your Environment
+### Step 5: Verify Your Environment
 
 Test that everything works:
 
@@ -154,7 +144,6 @@ docker ps
 - ✅ Google for best practices and solutions
 - ✅ Test your changes thoroughly
 - ✅ Commit frequently with clear messages
-- ✅ Document everything in FIXES.md
 - ✅ Ask questions if you need clarification
 ---
 
@@ -222,8 +211,9 @@ To get the CI/CD pipeline working in your fork, you'll need to configure some se
 ### Issue: "Can't fork the repository"
 
 **Solution:**
-- Make sure you accepted the GitHub invitation
+- Make sure you have access to the original repository
 - Try refreshing the page
+- Make sure you're logged into GitHub
 - Contact the hiring team if the issue persists
 
 ### Issue: "Tests are failing"
@@ -247,9 +237,24 @@ To get the CI/CD pipeline working in your fork, you'll need to configure some se
 
 **Common causes:**
 1. Missing GitHub Secrets (see "Setting Up GitHub Secrets" section)
-2. Docker Hub rate limits (use your own Docker Hub account)
+2. Docker Hub rate limits (see below)
 3. Test failures (fix the tests first)
 4. Build errors (make sure it works locally first)
+
+### Issue: "Docker Hub rate limits"
+
+**Error:** "toomanyrequests: You have reached your pull rate limit"
+
+**Solution:**
+```bash
+# Login to Docker Hub (creates/uses free account)
+docker login
+
+# Enter your Docker Hub username and password
+# This significantly increases your rate limit
+```
+
+**For CI/CD**: Make sure you've set up `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` in GitHub Secrets.
 
 ---
 
