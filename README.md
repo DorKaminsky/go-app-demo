@@ -102,7 +102,31 @@ curl http://localhost:8080/info | jq .version
 # Should return: "1.189.0" (not "1.189.0-SNAPSHOT")
 ```
 
-**Note**: Cloud Foundry deployment is commented out (requires internal network). Fix the configuration anyway.
+## 🔧 About Cloud Foundry Deployment
+
+**Note**: The Cloud Foundry deployment in the CI/CD pipeline is commented out because it requires internal network access.
+
+**However**, you should still fix the deployment configuration:
+
+### What to Fix:
+1. **manifest.yml**:
+
+2. **Makefile `deploy` target**:
+
+
+### How to Validate (Without Actually Deploying):
+```bash
+# Check Makefile deploy logic
+make --dry-run deploy
+# Should show VERSION normalization
+
+# Validate manifest.yml syntax
+cat manifest.yml
+# Check: health-check-http-endpoint: /health
+# Check: VERSION without -SNAPSHOT
+```
+
+**Why This Matters**: Shows you understand Cloud Foundry deployment even if you can't test it live.
 
 ## ✅ Success Checklist
 
@@ -113,7 +137,8 @@ Before submitting:
 - [ ] No hardcoded secrets
 - [ ] Version normalized (no `-SNAPSHOT`)
 - [ ] Health endpoint works
-- [ ] CI/CD pipeline passes
+- [ ] CI/CD pipeline passes (except deploy job)
+- [ ] Deployment config is production-ready
 
 
 **Remember**: Issues exist in MANY file. Don't stop early!
