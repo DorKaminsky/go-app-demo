@@ -1,6 +1,8 @@
 # Build stage
 FROM golang:1.22-alpine AS builder
 
+WORKDIR /app
+
 # Copy go mod files first for better layer caching
 COPY go.mod ./
 RUN go mod download
@@ -14,6 +16,8 @@ RUN go build -ldflags="-w -s" -o go-app-demo .
 
 # Runtime stage
 FROM alpine:latest
+
+WORKDIR /app
 
 # Create non-root user for security
 RUN adduser -D -u 1000 appuser

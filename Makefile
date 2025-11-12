@@ -14,12 +14,12 @@ check-tools:
 
 build: check-tools
 	@echo "Building Go application..."
-	@go build go-app-demo .
+	@go build -o go-app-demo .
 	@echo "✓ Build complete"
 
 test: check-tools
 	@echo "Running tests..."
-	@go tests -v ./...
+	@go test -v ./...
 	@echo "✓ Tests passed"
 
 coverage: check-tools

@@ -36,9 +36,9 @@ func TestGetVersionFromFile(t *testing.T) {
 
 	version := getVersion()
 
-	// This test will fail because it expects wrong value
-	if version != "3.0.0" {
-		t.Errorf("Expected version '3.0.0', got '%s'", version)
+	// Should read from file and strip -SNAPSHOT
+	if version != "2.0.0" {
+		t.Errorf("Expected version '2.0.0', got '%s'", version)
 	}
 }
 

@@ -5,9 +5,9 @@ applications:
     disk_quota: 512M
     instances: 2
 
-    # Use Go buildpack
-    buildpacks:
-      - go_buildpack
+    # Use Docker image from Docker Hub
+    docker:
+      image: ${DOCKERHUB_USERNAME}/go-app-demo:latest
 
     # VERSION is normalized by CI/CD pipeline (strips -SNAPSHOT)
     env:
