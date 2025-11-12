@@ -87,7 +87,7 @@ jobs:
   docker-push:
     name: Push Docker Image
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
     needs: [docker-build]
     steps:
       - name: Checkout code
