@@ -43,7 +43,7 @@ VERSION                   # Version file
 - [ ] Docker (`docker --version`)
 - [ ] Make (`make --version`)
 - [ ] Docker Hub account (free at https://hub.docker.com)
-- [ ] 3-4 hours of uninterrupted time
+
 
 ### Step 1: Access Your Repository
 
@@ -88,22 +88,13 @@ For CI/CD to work, add these secrets in your repository:
 
 ### Phase 1: Fix All Issues
 
-Identify and fix bugs in:
-- ✅ Go code (deprecated packages, missing features, error handling)
-- ✅ Tests (failing assertions, incorrect validations)
-- ✅ Dockerfile (missing directives, security issues)
-- ✅ Makefile (syntax errors, wrong commands)
-- ✅ CI/CD pipeline (deprecated actions, wrong runners, typos)
-- ✅ Deployment config (wrong deployment method)
 
 **Production-Ready Criteria:**
 - All tests pass
 - No hardcoded credentials
 - Version normalized (no `-SNAPSHOT`)
 - Health endpoint works
-- Non-root Docker user
 - CI/CD pipeline passes
-- Good test coverage (>80%)
 
 ### Phase 2: Kubernetes Deployment
 
@@ -194,24 +185,5 @@ If you see "toomanyrequests: You have reached your pull rate limit":
 docker login
 # Enter your Docker Hub credentials
 ```
-
-### Tests Failing
-
-That's expected! Finding and fixing failing tests is part of the assessment.
-
-### CI/CD Not Working
-
-1. Check GitHub Secrets are configured correctly
-2. Make sure tests pass locally first
-3. Review the error logs in GitHub Actions tab
-
-### Need Help?
-
-- ✅ Use AI tools (ChatGPT, Claude, Copilot)
-- ✅ Google for solutions
-- ✅ Read error messages carefully
-- 📧 Email hiring team for clarification (not answers!)
-
----
 
 **Good luck! 🚀**
