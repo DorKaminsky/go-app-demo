@@ -148,7 +148,7 @@ Before submitting:
 - [ ] Deployment config is production-ready
 
 
-**Remember**: Issues exist in MANY file. Don't stop early!
+**Remember**: Issues exist in MANY files. Don't stop early!
 
 ## ❓ Help & Troubleshooting
 
