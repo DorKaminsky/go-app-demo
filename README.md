@@ -20,7 +20,7 @@ This is a Go microservice with intentional DevOps issues. Your task: identify an
 }
 ```
 
-**Files to Review:**
+**Files to Review (Phase 1 - Fix Issues):**
 ```
 main.go                    # Application code
 main_test.go              # Unit tests
@@ -33,7 +33,11 @@ VERSION                   # Version file
 
 ## 🚀 Getting Started
 
-**Prerequisites**: Go 1.22+, Docker, Make, Git
+**Prerequisites**:
+- Go 1.22+
+- Docker
+- Make
+- Git
 
 **Setup:**
 ```bash
@@ -79,10 +83,22 @@ curl http://localhost:8080/info
 - Linter passes
 
 ## 📝 Deliverables
-1. **Working Pipeline**: All CI/CD jobs pass (except deploy - see below)
-2. **Pull Request**: Create a PR from `fix/devops-issues` → `main` **in your fork** (NOT to the original repository)
+
+### Phase 1: Fix Existing Issues
+1. **Working Pipeline**: All CI/CD jobs pass (build, test, lint, docker-build, docker-push)
+2. **All intentional bugs fixed**: Code, tests, Dockerfile, Makefile, CI/CD, manifest.yml
+3. **Docker image pushed** to Docker Hub registry
+
+### Phase 2: Kubernetes Deployment
+4. **Complete Helm Chart**: All templates in `helm/go-app-demo/`
+5. **GitHub Actions Workflow**: `.github/workflows/deploy.yml` for automated deployment
+
+### Final Submission
+6. **Pull Request**: Create a PR from `fix/devops-issues` → `main` **in your fork** (NOT to the original repository)
    - Clear summary of all fixes
    - Description of issues found and resolved
+   - Screenshots of successful Helm deployment
+   - Evidence that all GitHub Actions workflows pass
 
 **Note**: To get CI/CD working, you'll need to set up GitHub Secrets. See the **"Setting Up GitHub Secrets"** section in `candidate-setup-instructions.md`.
 
@@ -135,18 +151,41 @@ cat manifest.yml
 
 **Why This Matters**: Demonstrates you understand Cloud Foundry deployment configuration and can prepare deployment-ready manifests, even without live access to a CF environment.
 
+---
+
+## ☸️ Kubernetes Deployment (Required)
+
+After fixing all issues and pushing your Docker image, you must:
+
+1. **Create a Helm chart** in `helm/go-app-demo/` to deploy the application to Kubernetes
+2. **Create a GitHub Actions workflow** (`.github/workflows/deploy.yml`) that automatically deploys to Kubernetes using your Helm chart
+
+The deployment should use the Docker image you pushed to Docker Hub in the previous step.
+
+---
+
 ## ✅ Success Checklist
 
 Before submitting:
-- [ ] All critical issues fixed
+
+### Phase 1: Fix Existing Issues
+- [ ] All critical issues fixed in existing files
 - [ ] Tests pass locally (`make test`)
 - [ ] Docker builds and runs (`make docker-build`)
 - [ ] No hardcoded secrets
 - [ ] Version normalized (no `-SNAPSHOT`)
 - [ ] Health endpoint works
-- [ ] CI/CD pipeline passes (except deploy job)
-- [ ] Deployment config is production-ready
+- [ ] CI/CD pipeline passes (build, test, lint, docker-build, docker-push)
 
+### Phase 2: Kubernetes Deployment
+- [ ] Helm chart created in `helm/go-app-demo/`
+- [ ] GitHub Actions deploy workflow created (`.github/workflows/deploy.yml`)
+- [ ] Deploy workflow uses Docker image from Docker Hub
+
+### Final Deliverables
+- [ ] Pull Request from `fix/devops-issues` → `main` in your fork
+- [ ] PR description includes all fixes and Kubernetes deployment
+- [ ] All CI/CD jobs pass (including deploy workflow)
 
 **Remember**: Issues exist in MANY files. Don't stop early!
 
