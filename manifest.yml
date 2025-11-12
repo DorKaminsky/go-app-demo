@@ -1,9 +1,32 @@
 ---
 applications:
   - name: go-app-demo
-    memory: 128M
-    instances: 1
-    buildpacks:
-      - go_buildpack
+    memory: 256M
+    disk_quota: 512M
+    instances: 2
+
+    # Use Docker image from Docker Hub
+    docker:
+      image: ${DOCKERHUB_USERNAME}/go-app-demo:latest
+
+    # VERSION is normalized by CI/CD pipeline (strips -SNAPSHOT)
     env:
-      VERSION: 1.189.0-SNAPSHOT
+      VERSION: 1.189.0
+
+    # Health check configuration
+    health-check-type: http
+    health-check-http-endpoint: /health
+    health-check-invocation-timeout: 5
+
+    # Route configuration - let CF auto-generate the route
+    random-route: true
+
+    # Resource limits and scaling
+    processes:
+      - type: web
+        instances: 2
+        memory: 256M
+        disk_quota: 512M
+
+    # Timeout settings
+    timeout: 60
